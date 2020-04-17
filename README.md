@@ -17,4 +17,7 @@ Useful when using `Illuminate\Cache` FileStore *outside* of a Laravel install.
 
 ## Related Projects
 
+Laravel artisan commands to delete expired cache files:
+
 * <https://github.com/jdavidbakr/laravel-cache-garbage-collector>
+* <https://github.com/arifhp86/laravel-clear-expired-cache-file>
