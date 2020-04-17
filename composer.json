@@ -1,0 +1,14 @@
+{
+    "name": "attogram/file-cache-cleaner",
+    "description": "Delete expired Laravel cache files",
+    "type": "library",
+    "license": "MIT",
+    "require": {
+        "php": "^7"
+    },
+    "autoload": {
+        "psr-4": {
+            "Attogram\\Cache\\": "src/"
+        }
+    }
+}
