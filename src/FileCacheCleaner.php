@@ -16,7 +16,7 @@ declare(strict_types = 1);
 namespace Attogram\Cache;
 
 use FilesystemIterator;
-use InvalidArgumentException ;
+use InvalidArgumentException;
 use RecursiveDirectoryIterator;
 use RecursiveIteratorIterator;
 
