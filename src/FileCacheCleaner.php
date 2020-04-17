@@ -15,8 +15,8 @@ declare(strict_types = 1);
 
 namespace Attogram\Cache;
 
-use Exception;
 use FilesystemIterator;
+use InvalidArgumentException ;
 use RecursiveDirectoryIterator;
 use RecursiveIteratorIterator;
 
@@ -73,16 +73,16 @@ class FileCacheCleaner
 
     /**
      * @param string $directory (default '')
-     * @throws Exception
+     * @throws InvalidArgumentException 
      */
     private function setDirectory(string $directory = '')
     {
         if (!$directory) {
-            throw new Exception('Missing Directory');
+            throw new InvalidArgumentException('Missing Directory');
         }
 
         if (!is_dir($directory)) {
-            throw new Exception('Directory Not Found');
+            throw new InvalidArgumentException('Directory Not Found');
         }
 
         $this->directory = realpath($directory);

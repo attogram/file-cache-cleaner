@@ -24,5 +24,5 @@ $verbosity = isset($argv[2]) ? $argv[2] : '';
 try {
     (new FileCacheCleaner())->clean($cacheDirectory, $verbosity);
 } catch (Throwable $error) {
-    echo $error->getMessage();
+    echo get_class($error) . ': ' . $error->getMessage();
 }
