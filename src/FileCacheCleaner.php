@@ -33,8 +33,10 @@ use function unlink;
 
 class FileCacheCleaner
 {
-    const VERSION = '1.0.2';
+    /** @var string Code Version */
+    const VERSION = '1.0.3';
 
+    /** @var string Date Format for gmdate() */
     const DATE_FORMAT = 'Y-m-d H:i:s';
 
     /** @var string $directory - top-level of Cache Directory to be cleaned */
@@ -73,7 +75,7 @@ class FileCacheCleaner
 
     /**
      * @param string $directory (default '')
-     * @throws InvalidArgumentException 
+     * @throws InvalidArgumentException
      */
     private function setDirectory(string $directory = '')
     {
