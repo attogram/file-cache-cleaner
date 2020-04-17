@@ -33,7 +33,7 @@ use function time;
 
 class FileCacheCleaner
 {
-    const VERSION = '1.0.1';
+    const VERSION = '1.0.2';
 
     /** @var string $directory - top-level of Cache Directory to be cleaned */
     private $directory = '';
@@ -41,7 +41,7 @@ class FileCacheCleaner
     /** @var int $now - current time in unix timestamp format */
     private $now = 0;
 
-    /** @var int $verbose - verbosity level, empty = off, not-empty = on*/
+    /** @var mixed $verbose - verbosity level, empty = off, not-empty = on*/
     private $verbose = '';
 
     /**
@@ -61,7 +61,7 @@ class FileCacheCleaner
             new RecursiveDirectoryIterator($this->directory, FilesystemIterator::SKIP_DOTS)
         );
 
-        foreach ($directoryObjects as $name => $splFileInfo) {
+        foreach ($directoryObjects as $splFileInfo) {
             // Laravel Illuminate\Cache filenames are 40 character hexadecimal sha1 hashes
             if ($splFileInfo->isFile() && strlen($splFileInfo->getFileName()) == 40) {
                 $this->examineFile($splFileInfo->getPathName());
@@ -95,8 +95,6 @@ class FileCacheCleaner
         if (!$timestamp = $this->getFileCacheExpiration($pathname)) {
             return;
         }
-
-
 
         // If file cache is Not Expired yet
         if ($timestamp >= $this->now) {
