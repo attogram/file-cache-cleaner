@@ -29,6 +29,7 @@ use function print_r;
 use function realpath;
 use function strlen;
 use function time;
+use function unlink;
 
 class FileCacheCleaner
 {
