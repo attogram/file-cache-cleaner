@@ -8,7 +8,7 @@
  *   $cacheDirectory = '/path/to/cache/directory';
  *   $verbosity = 1; // 0 = off, 1 = on
  *   $cleaner->clean($cacheDirectory, $verbosity);
- * 
+ *
  * @TODO - after file deletions, also delete empty cache subdirectories
  */
 declare(strict_types = 1);
@@ -31,9 +31,9 @@ use function realpath;
 use function strlen;
 use function time;
 
-class FileCacheCleaner {
-
-    const VERSION = '1.0.0';
+class FileCacheCleaner
+{
+    const VERSION = '1.0.1';
 
     /** @var string $directory - top-level of Cache Directory to be cleaned */
     private $directory = '';
@@ -61,7 +61,7 @@ class FileCacheCleaner {
             new RecursiveDirectoryIterator($this->directory, FilesystemIterator::SKIP_DOTS)
         );
 
-        foreach($directoryObjects as $name => $splFileInfo) {
+        foreach ($directoryObjects as $name => $splFileInfo) {
             // Laravel Illuminate\Cache filenames are 40 character hexadecimal sha1 hashes
             if ($splFileInfo->isFile() && strlen($splFileInfo->getFileName()) == 40) {
                 $this->examineFile($splFileInfo->getPathName());
@@ -121,7 +121,7 @@ class FileCacheCleaner {
     {
         // Get expiration time from an Illuminate\Cache File
         // as a unix timestamp, from the first 10 characters in the file
-        $timestamp = file_get_contents($pathname, false, NULL, 0, 10);
+        $timestamp = file_get_contents($pathname, false, null, 0, 10);
 
         if (!$timestamp
             || strlen($timestamp) != 10 // if timestamp is Not 10 characters long

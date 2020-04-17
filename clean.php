@@ -14,7 +14,7 @@
 declare(strict_types = 1);
 
 require_once('src/FileCacheCleaner.php');
-//require_once('vendor/autoload.php');
+// or: require_once('vendor/autoload.php');
 
 use Attogram\Cache\FileCacheCleaner;
 
