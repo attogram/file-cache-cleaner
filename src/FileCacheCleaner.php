@@ -52,7 +52,7 @@ class FileCacheCleaner
         $this->verbose = $verbosity;
         
         $this->now = time(); // datetime now in unix timestamp format
-        $this->debug(get_class() . ': ' . gmdate('Y-m-d H:i:s', $this->now) . ' UTC');
+        $this->debug(get_class() . ' v' . self::VERSION . ' - ' . gmdate('Y-m-d H:i:s', $this->now) . ' UTC');
 
         $this->setDirectory($directory);
 
