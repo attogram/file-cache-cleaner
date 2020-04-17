@@ -19,7 +19,6 @@ use Exception;
 use FilesystemIterator;
 use RecursiveDirectoryIterator;
 use RecursiveIteratorIterator;
-use SplFileInfo;
 
 use function file_get_contents;
 use function get_class;
