@@ -34,6 +34,8 @@ class FileCacheCleaner
 {
     const VERSION = '1.0.2';
 
+    const DATE_FORMAT = 'Y-m-d H:i:s';
+
     /** @var string $directory - top-level of Cache Directory to be cleaned */
     private $directory = '';
 
@@ -52,7 +54,7 @@ class FileCacheCleaner
         $this->verbose = $verbosity;
         
         $this->now = time(); // datetime now in unix timestamp format
-        $this->debug(get_class() . ' v' . self::VERSION . ' - ' . gmdate('Y-m-d H:i:s', $this->now) . ' UTC');
+        $this->debug(get_class() . ' v' . self::VERSION . ' - '. gmdate(self::DATE_FORMAT, $this->now) . ' UTC');
 
         $this->setDirectory($directory);
 
@@ -97,11 +99,11 @@ class FileCacheCleaner
 
         // If file cache is Not Expired yet
         if ($timestamp >= $this->now) {
-            $this->debug('cache active : ' . gmdate('Y-m-d H:i:s', $timestamp) . " UTC - $pathname");
+            $this->debug('cache active : ' . gmdate(self::DATE_FORMAT, $timestamp) . " UTC - $pathname");
             return;
         }
 
-        $this->debug('cache expired: ' . gmdate('Y-m-d H:i:s', $timestamp) . " UTC - $pathname");
+        $this->debug('cache expired: ' . gmdate(self::DATE_FORMAT, $timestamp) . " UTC - $pathname");
 
         if (unlink($pathname)) {
             return;
