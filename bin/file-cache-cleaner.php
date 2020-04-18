@@ -6,15 +6,15 @@
  * usage:
  *
  *   silent:
- *     php clean.php path/to/cache/directory
+ *     php file-cache-cleaner.php path/to/cache/directory
  *
  *   debug mode:
- *     php clean.php path/to/cache/directory debug
+ *     php file-cache-cleaner.php path/to/cache/directory debug
  */
 declare(strict_types = 1);
 
-require_once('src/FileCacheCleaner.php');
-// or: require_once('vendor/autoload.php');
+require_once(__DIR__ . '/../src/FileCacheCleaner.php');
+//require_once(__DIR__ . '/../vendor/autoload.php');
 
 use Attogram\Cache\FileCacheCleaner;
 

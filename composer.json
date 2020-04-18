@@ -10,5 +10,8 @@
         "psr-4": {
             "Attogram\\Cache\\": "src/"
         }
-    }
+    },
+    "bin": [
+        "bin/file-cache-cleaner.php"
+    ]
 }
