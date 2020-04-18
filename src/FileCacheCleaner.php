@@ -34,7 +34,7 @@ use function unlink;
 class FileCacheCleaner
 {
     /** @var string Code Version */
-    const VERSION = '1.0.3';
+    const VERSION = '2.0.0';
 
     /** @var string Date Format for gmdate() */
     const DATE_FORMAT = 'Y-m-d H:i:s';
