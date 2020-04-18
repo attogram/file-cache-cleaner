@@ -1,7 +1,7 @@
+#!/usr/bin/env php
 <?php
 /**
- * File Cache Cleaner
- *   - Command line example
+ * File Cache Cleaner - Command line
  *
  * usage:
  *
@@ -13,8 +13,22 @@
  */
 declare(strict_types = 1);
 
-require_once(__DIR__ . '/../src/FileCacheCleaner.php');
-//require_once(__DIR__ . '/../vendor/autoload.php');
+$autoloadLocations = [
+    __DIR__ . '/../autoload.php',
+    __DIR__ . '/../vendor/autoload.php',
+    __DIR__ . '/../../../autoload.php',
+];
+$autoloaded = false;
+foreach ($autoloadLocations as $load) {
+    if (is_readable($load)) {
+        $autoloaded = true;
+        require_once($load);
+        break;
+    }
+}
+if (!$autoloaded) {
+    exit('autoload.php not found');
+}
 
 use Attogram\Cache\FileCacheCleaner;
 
