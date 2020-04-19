@@ -34,7 +34,7 @@ use function unlink;
 class FileCacheCleaner
 {
     /** @var string Code Version */
-    const VERSION = '2.0.0';
+    const VERSION = '2.0.1';
 
     /** @var string Date Format for gmdate() */
     const DATE_FORMAT = 'Y-m-d H:i:s';
@@ -117,7 +117,7 @@ class FileCacheCleaner
 
     /**
      * @param string $pathname - full path and filename
-     * @return int - expiration time as unix timestamp, or 0 on error
+     * @return int - expiration time as unix timestamp, or 9999999999 on error
      */
     private function getFileCacheExpiration(string $pathname): int
     {
@@ -130,7 +130,7 @@ class FileCacheCleaner
             || !preg_match('/^([0-9]+)$/', $timestamp) // if timestamp is Not numbers-only
         ) {
             $this->debug('Not cache: ' . $pathname);
-            return 0;
+            return 9999999999; // max time 2286-11-20 17:46:39
         }
 
         return (int) $timestamp;
