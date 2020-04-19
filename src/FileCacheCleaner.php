@@ -1,9 +1,8 @@
 <?php
 /**
- * File Cache Cleaner
- *   - delete expired Laravel Illuminate\Cache files
+ * File Cache Cleaner - Delete expired Laravel-style `Illuminate\Cache` cache files
  *
- * usage:
+ * example usage:
  *   $cleaner = new Attogram\Cache\FileCacheCleaner();
  *   $cacheDirectory = '/path/to/cache/directory';
  *   $verbosity = 1; // 0 = off, 1 = on
@@ -100,8 +99,7 @@ class FileCacheCleaner
             return;
         }
 
-        // If file cache is Not Expired yet
-        if ($timestamp >= $this->now) {
+        if ($timestamp >= $this->now) { // If file cache is Not Expired yet
             $this->debug('cache active : ' . gmdate(self::DATE_FORMAT, $timestamp) . " UTC - $pathname");
             return;
         }

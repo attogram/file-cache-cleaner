@@ -1,8 +1,10 @@
 # File Cache Cleaner
 
-Delete expired Laravel cache files.
+Delete expired Laravel-style `Illuminate\Cache` cache files.
 
-Useful when using `Illuminate\Cache` FileStore *outside* of a Laravel install.
+For projects using FileStore *outside* of a Laravel install.
+
+PHP 7+, One class, No dependecies, Composer Ready.
 
 [![Maintainability](https://api.codeclimate.com/v1/badges/a98629e339eeef4d56bf/maintainability)](https://codeclimate.com/github/attogram/file-cache-cleaner/maintainability)
 [![Latest Stable Version](https://poser.pugx.org/attogram/file-cache-cleaner/v/stable)](https://packagist.org/packages/attogram/file-cache-cleaner)
