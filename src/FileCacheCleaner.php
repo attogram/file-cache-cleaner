@@ -105,7 +105,7 @@ class FileCacheCleaner
     }
 
     /**
-     * @param SplFileInfo $splFileInfo
+     * @param \SplFileInfo $splFileInfo
      */
     private function examineObject($splFileInfo)
     {
