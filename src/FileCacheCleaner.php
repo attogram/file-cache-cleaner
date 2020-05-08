@@ -46,7 +46,7 @@ class FileCacheCleaner
     private $verbose = '';
 
     /** @var array $counts - status counts */
-    private $counts = [];
+    private $count = [];
 
     /**
      * @param string $directory (default '')
@@ -61,7 +61,7 @@ class FileCacheCleaner
         $this->setCacheDirectory($directory);
         $this->debug('Cache Directory: ' . $this->cacheDirectory);
 
-        $this->count['objects'] = $this->count['files'] = $this->count['directories'] 
+        $this->count['objects'] = $this->count['files'] = $this->count['directories']
             = $this->count['deleted_files'] = $this->count['deleted_dirs'] = 0;
 
         $this->examineCacheDirectory();
@@ -117,7 +117,6 @@ class FileCacheCleaner
      */
     private function examineFile(string $pathname)
     {
-
         if (!($timestamp = $this->getFileCacheExpiration($pathname)) // If no valid timestamp found
             || ($timestamp >= $this->currentTime) // If file cache is Not Expired yet
         ) {
@@ -157,7 +156,7 @@ class FileCacheCleaner
      */
     private function examineDirectories()
     {
-        foreach(array_reverse($this->subDirectoryList) as $directory) {
+        foreach (array_reverse($this->subDirectoryList) as $directory) {
             $hasObjects = false;
             foreach (new DirectoryIterator($directory) as $thing) {
                 if (!$thing->isDot() && ($thing->isFile() || $thing->isDir())) {
