@@ -127,7 +127,7 @@ class FileCacheCleaner
         }
         if (unlink($pathname)) {
             $this->count['deleted_files']++;
-            $this->debug('DELETED - ' . gmdate(self::DATE_FORMAT, $timestamp) . " UTC - $pathname");
+            //$this->debug('DELETED - ' . gmdate(self::DATE_FORMAT, $timestamp) . " UTC - $pathname");
     
             return;
         }
@@ -190,7 +190,7 @@ class FileCacheCleaner
     {
         if (rmdir($directory)) {
             $this->count['deleted_dirs']++;
-            $this->debug('DELETED EMPTY DIR: ' . $directory);
+            //$this->debug('DELETED EMPTY DIR: ' . $directory);
             
             return;
         }
