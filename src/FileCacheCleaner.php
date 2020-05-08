@@ -30,7 +30,7 @@ use function unlink;
 class FileCacheCleaner
 {
     /** @var string Code Version */
-    const VERSION = '2.1.1';
+    const VERSION = '2.2.0';
 
     /** @var string Date Format for gmdate() */
     const DATE_FORMAT = 'Y-m-d H:i:s';
@@ -100,18 +100,27 @@ class FileCacheCleaner
             RecursiveIteratorIterator::SELF_FIRST
         );
         foreach ($filesystemIterator as $splFileInfo) {
-            $this->count['objects']++;
-            // Find Illuminate\Cache files - filenames are 40 character hexadecimal sha1 hashes
-            if ($splFileInfo->isFile() && strlen($splFileInfo->getFileName()) == 40) {
-                $this->count['files']++;
-                $this->examineFile($splFileInfo->getPathName());
-                continue;
-            }
-            // Save directories to list
-            if ($splFileInfo->isDir()) {
-                $this->count['directories']++;
-                $this->subDirectoryList[] = $splFileInfo->getPathName();
-            }
+            $this->examineObject($splFileInfo);
+        }
+    }
+
+    /**
+     * @param SplFileInfo $splFileInfo
+     */
+    private function examineObject($splFileInfo)
+    {
+        $this->count['objects']++;
+        // Find Illuminate\Cache files - filenames are 40 character hexadecimal sha1 hashes
+        if ($splFileInfo->isFile() && strlen($splFileInfo->getFileName()) == 40) {
+            $this->count['files']++;
+            $this->examineFile($splFileInfo->getPathName());
+            
+            return;
+        }
+        // Save directories to list
+        if ($splFileInfo->isDir()) {
+            $this->count['directories']++;
+            $this->subDirectoryList[] = $splFileInfo->getPathName();
         }
     }
 
@@ -127,7 +136,6 @@ class FileCacheCleaner
         }
         if (unlink($pathname)) {
             $this->count['deleted_files']++;
-            //$this->debug('DELETED - ' . gmdate(self::DATE_FORMAT, $timestamp) . " UTC - $pathname");
     
             return;
         }
@@ -190,7 +198,6 @@ class FileCacheCleaner
     {
         if (rmdir($directory)) {
             $this->count['deleted_dirs']++;
-            //$this->debug('DELETED EMPTY DIR: ' . $directory);
             
             return;
         }

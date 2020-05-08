@@ -1,6 +1,8 @@
 # File Cache Cleaner
 
-Delete expired cache files.  For projects using [`Illuminate\Cache`](https://github.com/illuminate/cache) FileStore *without* a Laravel installation.
+Delete expired cache files.  For projects using
+[`Illuminate\Cache`](https://github.com/illuminate/cache) FileStore
+*without* a Laravel installation.
 
 PHP 7+, One class, No dependencies, Composer Ready.
 
@@ -27,3 +29,4 @@ Laravel artisan commands to delete expired cache files:
 
 * <https://github.com/jdavidbakr/laravel-cache-garbage-collector>
 * <https://github.com/arifhp86/laravel-clear-expired-cache-file>
+* <https://github.com/momokang/laravel-clean-file-cache>
