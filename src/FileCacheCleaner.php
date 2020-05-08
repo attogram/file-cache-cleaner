@@ -14,6 +14,7 @@ use InvalidArgumentException;
 use RecursiveDirectoryIterator;
 use RecursiveIteratorIterator;
 
+use function array_reverse;
 use function file_get_contents;
 use function get_class;
 use function gmdate;
@@ -21,6 +22,7 @@ use function is_dir;
 use function preg_match;
 use function print_r;
 use function realpath;
+use function rmdir;
 use function strlen;
 use function time;
 use function unlink;
@@ -28,7 +30,7 @@ use function unlink;
 class FileCacheCleaner
 {
     /** @var string Code Version */
-    const VERSION = '2.1.0';
+    const VERSION = '2.1.1';
 
     /** @var string Date Format for gmdate() */
     const DATE_FORMAT = 'Y-m-d H:i:s';
