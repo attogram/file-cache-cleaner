@@ -64,14 +64,13 @@ class FileCacheCleaner
         $this->setCacheDirectory($directory);
         $this->debug('Cache Directory: ' . $this->cacheDirectory);
 
-        $this->count['objects'] = $this->count['files'] = $this->count['directories']
+        $this->count['files'] = $this->count['directories']
             = $this->count['deleted_files'] = $this->count['deleted_dirs'] = 0;
 
         $this->examineCacheDirectory();
-        $this->debug($this->count['objects'] . ' objects found');
-        $this->debug($this->count['files'] . ' files found');
+        $this->debug($this->count['files'] . ' cache files found');
         $this->debug($this->count['directories'] . ' sub-directories found');
-        $this->debug($this->count['deleted_files'] . ' deleted files');
+        $this->debug($this->count['deleted_files'] . ' deleted cache files');
     
         $this->examineDirectories();
         $this->debug($this->count['deleted_dirs'] . ' deleted empty directories');
@@ -109,7 +108,6 @@ class FileCacheCleaner
      */
     private function examineObject($splFileInfo)
     {
-        $this->count['objects']++;
         // Find Illuminate\Cache files - filenames are 40 character hexadecimal sha1 hashes
         if ($splFileInfo->isFile() && strlen($splFileInfo->getFileName()) == 40) {
             $this->count['files']++;
