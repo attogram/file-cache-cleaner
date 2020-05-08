@@ -157,18 +157,9 @@ class FileCacheCleaner
     private function examineDirectories()
     {
         foreach (array_reverse($this->subDirectoryList) as $directory) {
-            $hasObjects = false;
-            foreach (new DirectoryIterator($directory) as $thing) {
-                if (!$thing->isDot() && ($thing->isFile() || $thing->isDir())) {
-                    $hasObjects = true;
-                    break;
-                }
-            }
-            // Directory is not empty
-            if ($hasObjects) {
+            if (!$this->isDirectoryEmpty($directory)) {
                 continue;
             }
-            // Directory is empty - remove it
             if (rmdir($directory)) {
                 $this->count['deleted_dirs']++;
                 $this->debug('DELETED EMPTY DIR: ' . $directory);
@@ -176,6 +167,22 @@ class FileCacheCleaner
             }
             $this->debug('ERROR deleting ' . $directory); // @TODO - handle error deleting directory
         }
+    }
+
+    /**
+     * Is Directory Empty?
+     * @param string $directory
+     * @return bool
+     */
+    private function isDirectoryEmpty($directory)
+    {
+        foreach (new DirectoryIterator($directory) as $thing) {
+            if (!$thing->isDot() && ($thing->isFile() || $thing->isDir())) {
+                return false;
+            }
+        }
+
+        return true;
     }
 
     /**
