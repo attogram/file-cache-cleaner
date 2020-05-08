@@ -59,6 +59,7 @@ class FileCacheCleaner
         $this->verbose = $verbosity;
         $this->currentTime = time();
         $this->debug(get_class() . ' v' . self::VERSION);
+        $this->debug('Check Time: ' . gmdate(self::DATE_FORMAT, $this->currentTime));
     
         $this->setCacheDirectory($directory);
         $this->debug('Cache Directory: ' . $this->cacheDirectory);
@@ -202,7 +203,7 @@ class FileCacheCleaner
     private function debug($msg = '')
     {
         if ($this->verbose) {
-            print gmdate(self::DATE_FORMAT, $this->currentTime) . ' UTC: ' . print_r($msg, true) . "\n";
+            print gmdate(self::DATE_FORMAT) . ' UTC: ' . print_r($msg, true) . "\n";
         }
     }
 }
