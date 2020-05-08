@@ -1,19 +1,14 @@
 <?php
 /**
- * File Cache Cleaner - Delete expired Laravel-style `Illuminate\Cache` cache files
+ * File Cache Cleaner
+ * Delete expired Laravel-style `Illuminate\Cache` cache files
  *
- * example usage:
- *   $cleaner = new Attogram\Cache\FileCacheCleaner();
- *   $cacheDirectory = '/path/to/cache/directory';
- *   $verbosity = 1; // 0 = off, 1 = on
- *   $cleaner->clean($cacheDirectory, $verbosity);
- *
- * @TODO - after file deletions, also delete empty cache subdirectories
  */
 declare(strict_types = 1);
 
 namespace Attogram\Cache;
 
+use DirectoryIterator;
 use FilesystemIterator;
 use InvalidArgumentException;
 use RecursiveDirectoryIterator;
@@ -33,19 +28,25 @@ use function unlink;
 class FileCacheCleaner
 {
     /** @var string Code Version */
-    const VERSION = '2.0.1';
+    const VERSION = '2.1.0';
 
     /** @var string Date Format for gmdate() */
     const DATE_FORMAT = 'Y-m-d H:i:s';
 
-    /** @var string $directory - top-level of Cache Directory to be cleaned */
-    private $directory = '';
+    /** @var string $cacheDirectory - top-level of Cache Directory to be cleaned */
+    private $cacheDirectory = '';
 
-    /** @var int $now - current time in unix timestamp format */
-    private $now = 0;
+    /** @var array $subDirectoryList - list of all sub-directories in the Cache Directory */
+    private $subDirectoryList = [];
+
+    /** @var int $currentTime - current datetime in unix timestamp format */
+    private $currentTime = 0;
 
     /** @var mixed $verbose - verbosity level, empty = off, not-empty = on*/
     private $verbose = '';
+
+    /** @var array $counts - status counts */
+    private $counts = [];
 
     /**
      * @param string $directory (default '')
@@ -54,40 +55,61 @@ class FileCacheCleaner
     public function clean(string $directory = '', $verbosity = '')
     {
         $this->verbose = $verbosity;
-        
-        $this->now = time(); // datetime now in unix timestamp format
-        $this->debug(get_class() . ' v' . self::VERSION . ' - '. gmdate(self::DATE_FORMAT, $this->now) . ' UTC');
+        $this->currentTime = time();
+        $this->debug(get_class() . ' v' . self::VERSION);
+    
+        $this->setCacheDirectory($directory);
+        $this->debug('Cache Directory: ' . $this->cacheDirectory);
 
-        $this->setDirectory($directory);
+        $this->count['objects'] = $this->count['files'] = $this->count['directories'] 
+            = $this->count['deleted_files'] = $this->count['deleted_dirs'] = 0;
 
-        $directoryObjects = new RecursiveIteratorIterator(
-            new RecursiveDirectoryIterator($this->directory, FilesystemIterator::SKIP_DOTS)
-        );
-
-        foreach ($directoryObjects as $splFileInfo) {
-            // Laravel Illuminate\Cache filenames are 40 character hexadecimal sha1 hashes
-            if ($splFileInfo->isFile() && strlen($splFileInfo->getFileName()) == 40) {
-                $this->examineFile($splFileInfo->getPathName());
-            }
-        }
+        $this->examineCacheDirectory();
+        $this->debug($this->count['objects'] . ' objects found');
+        $this->debug($this->count['files'] . ' files found');
+        $this->debug($this->count['directories'] . ' sub-directories found');
+        $this->debug($this->count['deleted_files'] . ' deleted files');
+    
+        $this->examineDirectories();
+        $this->debug($this->count['deleted_dirs'] . ' deleted empty directories');
     }
 
     /**
      * @param string $directory (default '')
      * @throws InvalidArgumentException
      */
-    private function setDirectory(string $directory = '')
+    private function setCacheDirectory(string $directory = '')
     {
         if (!$directory) {
-            throw new InvalidArgumentException('Missing Directory');
+            throw new InvalidArgumentException('Missing Cache Directory');
         }
-
         if (!is_dir($directory)) {
-            throw new InvalidArgumentException('Directory Not Found');
+            throw new InvalidArgumentException('Cache Directory Not Found');
         }
+        $this->cacheDirectory = realpath($directory);
+    }
 
-        $this->directory = realpath($directory);
-        $this->debug('directory: ' . $this->directory);
+    private function examineCacheDirectory()
+    {
+        // Get all objects in cache directory, recursively into all sub-directories
+        $filesystemIterator = new RecursiveIteratorIterator(
+            new RecursiveDirectoryIterator($this->cacheDirectory, FilesystemIterator::SKIP_DOTS),
+            RecursiveIteratorIterator::SELF_FIRST
+        );
+        foreach ($filesystemIterator as $splFileInfo) {
+            $this->count['objects']++;
+            // Find Illuminate\Cache files - filenames are 40 character hexadecimal sha1 hashes
+            if ($splFileInfo->isFile() && strlen($splFileInfo->getFileName()) == 40) {
+                $this->count['files']++;
+                $this->examineFile($splFileInfo->getPathName());
+                continue;
+            }
+            // Save directories to list
+            if ($splFileInfo->isDir()) {
+                $this->count['directories']++;
+                $this->subDirectoryList[] = $splFileInfo->getPathName();
+            }
+        }
     }
 
     /**
@@ -95,22 +117,19 @@ class FileCacheCleaner
      */
     private function examineFile(string $pathname)
     {
-        if (!$timestamp = $this->getFileCacheExpiration($pathname)) {
+
+        if (!($timestamp = $this->getFileCacheExpiration($pathname)) // If no valid timestamp found
+            || ($timestamp >= $this->currentTime) // If file cache is Not Expired yet
+        ) {
             return;
         }
-
-        if ($timestamp >= $this->now) { // If file cache is Not Expired yet
-            $this->debug('cache active : ' . gmdate(self::DATE_FORMAT, $timestamp) . " UTC - $pathname");
-            return;
-        }
-
-        $this->debug('cache expired: ' . gmdate(self::DATE_FORMAT, $timestamp) . " UTC - $pathname");
-
         if (unlink($pathname)) {
+            $this->count['deleted_files']++;
+            $this->debug('DELETED - ' . gmdate(self::DATE_FORMAT, $timestamp) . " UTC - $pathname");
+    
             return;
         }
-
-        $this->debug('ERROR: unable to delete ' . $pathname);
+        $this->debug('ERROR: unable to delete ' . $pathname); // @TODO - handle error deleting file
     }
 
     /**
@@ -122,8 +141,7 @@ class FileCacheCleaner
         // Get expiration time from an Illuminate\Cache File
         // as a unix timestamp, from the first 10 characters in the file
         $timestamp = file_get_contents($pathname, false, null, 0, 10);
-
-        if (!$timestamp
+        if (!$timestamp // if timestamp not found
             || strlen($timestamp) != 10 // if timestamp is Not 10 characters long
             || !preg_match('/^([0-9]+)$/', $timestamp) // if timestamp is Not numbers-only
         ) {
@@ -135,12 +153,39 @@ class FileCacheCleaner
     }
 
     /**
+     * Remove Empty Directories
+     */
+    private function examineDirectories()
+    {
+        foreach(array_reverse($this->subDirectoryList) as $directory) {
+            $hasObjects = false;
+            foreach (new DirectoryIterator($directory) as $thing) {
+                if (!$thing->isDot() && ($thing->isFile() || $thing->isDir())) {
+                    $hasObjects = true;
+                    break;
+                }
+            }
+            // Directory is not empty
+            if ($hasObjects) {
+                continue;
+            }
+            // Directory is empty - remove it
+            if (rmdir($directory)) {
+                $this->count['deleted_dirs']++;
+                $this->debug('DELETED EMPTY DIR: ' . $directory);
+                continue;
+            }
+            $this->debug('ERROR deleting ' . $directory); // @TODO - handle error deleting directory
+        }
+    }
+
+    /**
      * @param mixed $msg
      */
     private function debug($msg = '')
     {
         if ($this->verbose) {
-            echo print_r($msg, true) . "\n";
+            print gmdate(self::DATE_FORMAT, $this->currentTime) . ' UTC: ' . print_r($msg, true) . "\n";
         }
     }
 }
