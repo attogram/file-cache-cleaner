@@ -157,24 +157,18 @@ class FileCacheCleaner
     private function examineDirectories()
     {
         foreach (array_reverse($this->subDirectoryList) as $directory) {
-            if (!$this->isDirectoryEmpty($directory)) {
-                continue;
+            if ($this->isEmptyDirectory($directory)) {
+                $this->removeDirectory($directory);
             }
-            if (rmdir($directory)) {
-                $this->count['deleted_dirs']++;
-                $this->debug('DELETED EMPTY DIR: ' . $directory);
-                continue;
-            }
-            $this->debug('ERROR deleting ' . $directory); // @TODO - handle error deleting directory
         }
     }
 
     /**
-     * Is Directory Empty?
+     * Is the Directory Empty?
      * @param string $directory
      * @return bool
      */
-    private function isDirectoryEmpty($directory)
+    private function isEmptyDirectory($directory)
     {
         foreach (new DirectoryIterator($directory) as $thing) {
             if (!$thing->isDot() && ($thing->isFile() || $thing->isDir())) {
@@ -183,6 +177,21 @@ class FileCacheCleaner
         }
 
         return true;
+    }
+
+    /**
+     * Remove the Directory
+     * @param string $directory
+     */
+    private function removeDirectory($directory)
+    {
+        if (rmdir($directory)) {
+            $this->count['deleted_dirs']++;
+            $this->debug('DELETED EMPTY DIR: ' . $directory);
+            
+            return;
+        }
+        $this->debug('ERROR deleting ' . $directory); // @TODO - handle error deleting directory
     }
 
     /**
