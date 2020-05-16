@@ -13,9 +13,22 @@ PHP 7+, One class, No dependencies, Composer Ready.
 
 ## Usage
 
+Install:
+
 `composer require attogram/file-cache-cleaner`
 
-`vendor/bin/file-cache-cleaner path/to/cache/directory debug`
+Report on cache status only:
+
+`vendor/bin/file-cache-cleaner -d path/to/cache/directory`
+
+Clean cache - delete expired cache files and empty subdirectories:
+
+`vendor/bin/file-cache-cleaner -d path/to/cache/directory --clean`
+
+Command Line Options:
+
+* `-d path`  or  `--directory path`  - set path to Cache Directory
+* `-c`       or  `--clean`           - clean cache: delete expired files, remove empty subdirectories
 
 ## Project Links
 
