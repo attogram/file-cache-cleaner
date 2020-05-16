@@ -127,7 +127,7 @@ class FileCacheCleaner
         if (!$splFileInfo->isFile()) {
             return;
         }
-        // Find Illuminate\Cache files 
+        // Find Illuminate\Cache files
         // - filenames are 40 character hexadecimal sha1 hashes, no extension
         if (strlen($splFileInfo->getFileName()) == 40) {
             $this->incrementReport('cache_files');
@@ -169,7 +169,7 @@ class FileCacheCleaner
         if (!$splFileInfo->isDir()) {
             return;
         }
-        // Save subdirectories to list 
+        // Save subdirectories to list
         // - cache subdirectory names are always 2 characters long, alphanumeric
         if (strlen($splFileInfo->getFileName()) == 2) {
             $this->incrementReport('cache_subdirectories');
