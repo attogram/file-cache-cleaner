@@ -30,7 +30,7 @@ use function unlink;
 class FileCacheCleaner
 {
     /** @var string Code Version */
-    const VERSION = '2.3.0';
+    const VERSION = '2.3.1';
 
     /** @var string Date Format for gmdate() */
     const DATE_FORMAT = 'Y-m-d H:i:s';
@@ -63,9 +63,8 @@ class FileCacheCleaner
     public function clean()
     {
         $this->verbose(get_class() . ' v' . self::VERSION);
-
         $this->setOptions();
-        $this->examineCacheDirectory();
+        $this->examineCache();
         $this->examineCacheSubdirectories();
         $this->showReport();
     }
@@ -73,22 +72,19 @@ class FileCacheCleaner
     private function setOptions()
     {
         $options = getopt('d:c', ['directory:', 'clean']);
-
         if (!$options) {
             print self::USAGE;
             $this->fatalError('Please specify --directory and --clean');
         }
-
         // -d or --directory - set Cache Directory
         $cacheDirectory = !empty($options['d']) ? $options['d'] : '';
         $cacheDirectory = !empty($options['directory']) ? $options['directory'] : $cacheDirectory;
         $this->setCacheDirectory($cacheDirectory);
-
         // -c or --clean - turn on Cleaning mode
         $this->clean = isset($options['c']) ? true : false;
         $this->clean = isset($options['clean']) ? true : $this->clean;
         $this->verbose('Cleaning Mode: ' . ($this->clean ? 'On' : 'Off'));
-
+        // expiration comparison time
         $this->currentTime = time();
     }
 
@@ -109,7 +105,7 @@ class FileCacheCleaner
         $this->verbose('Cache Directory: ' . $this->cacheDirectory);
     }
 
-    private function examineCacheDirectory()
+    private function examineCache()
     {
         // Get all objects in cache directory, recursively into all sub-directories
         $filesystemIterator = new RecursiveIteratorIterator(
@@ -118,66 +114,70 @@ class FileCacheCleaner
         );
         foreach ($filesystemIterator as $splFileInfo) {
             $this->incrementReport('objects');
-            $this->examineObject($splFileInfo);
+            $this->findCacheFile($splFileInfo);
+            $this->findCacheSubdirectory($splFileInfo);
         }
     }
 
     /**
      * @param \SplFileInfo $splFileInfo
      */
-    private function examineObject($splFileInfo)
+    private function findCacheFile($splFileInfo)
     {
-        // Find Illuminate\Cache files - filenames are 40 character hexadecimal sha1 hashes
-        if ($splFileInfo->isFile()) {
-            if (strlen($splFileInfo->getFileName()) == 40) {
-                $this->incrementReport('cache_files');
-                $this->examineFile($splFileInfo->getPathName());
-            
-                return;
-            }
-            $this->incrementReport('non_cache_files');
-
+        if (!$splFileInfo->isFile()) {
             return;
         }
-
-        // Save subdirectories to list - cache subdirectory names are always 2 characters long
-        if ($splFileInfo->isDir()) {
-            if (strlen($splFileInfo->getFileName()) == 2) {
-                $this->incrementReport('cache_subdirectories');
-                $this->subDirectoryList[] = $splFileInfo->getPathName();
-    
-                return;
-            }
-            $this->incrementReport('non_cache_subdirectories');
-
+        // Find Illuminate\Cache files 
+        // - filenames are 40 character hexadecimal sha1 hashes, no extension
+        if (strlen($splFileInfo->getFileName()) == 40) {
+            $this->incrementReport('cache_files');
+            $this->examineCacheFile($splFileInfo->getPathName());
+        
             return;
         }
+        $this->incrementReport('non_cache_files');
     }
 
     /**
      * @param string $pathname - path and filename
      */
-    private function examineFile(string $pathname)
+    private function examineCacheFile(string $pathname)
     {
         $timestamp = $this->getFileCacheExpiration($pathname);
-
         if ($timestamp > $this->currentTime) { // If file cache is Not Expired yet
             $this->incrementReport('unexpired_cache_files');
+
             return;
         }
-
         $this->incrementReport('expired_cache_files');
-
         if (!$this->clean) {
             return;
         }
-
         if (unlink($pathname)) {
             $this->incrementReport('deleted_expired_cache_files');
     
             return;
         }
-        $this->verbose('ERROR: unable to delete ' . $pathname); // @TODO - handle error deleting file
+        $this->incrementReport('unable_to_delete_files');
+    }
+
+    /**
+     * @param \SplFileInfo $splFileInfo
+     */
+    private function findCacheSubdirectory($splFileInfo)
+    {
+        if (!$splFileInfo->isDir()) {
+            return;
+        }
+        // Save subdirectories to list 
+        // - cache subdirectory names are always 2 characters long, alphanumeric
+        if (strlen($splFileInfo->getFileName()) == 2) {
+            $this->incrementReport('cache_subdirectories');
+            $this->subDirectoryList[] = $splFileInfo->getPathName();
+
+            return;
+        }
+        $this->incrementReport('non_cache_subdirectories');
     }
 
     /**
@@ -210,9 +210,7 @@ class FileCacheCleaner
         foreach (array_reverse($this->subDirectoryList) as $directory) {
             if ($this->isEmptyDirectory($directory)) {
                 $this->incrementReport('empty_cache_subdirectories');
-                if ($this->clean) {
-                    $this->removeDirectory($directory);
-                }
+                $this->removeDirectory($directory);
             }
         }
     }
@@ -239,31 +237,36 @@ class FileCacheCleaner
      */
     private function removeDirectory($directory)
     {
+        if (!$this->clean) {
+            return;
+        }
         if (rmdir($directory)) {
             $this->incrementReport('deleted_empty_cache_subdirectories');
             
             return;
         }
-        $this->verbose('ERROR deleting ' . $directory); // @TODO - handle error deleting directory
+        $this->incrementReport('unable_to_delete_directories');
     }
 
     private function showReport()
     {
         $finalReport = 'Cache Report: ' . $this->cacheDirectory . "\n"
-            . "-- Cache Files --\n"
+            . "---------- Cache Files ----------\n"
             . $this->getReport('cache_files') . " cache files\n"
             . $this->getReport('unexpired_cache_files') . " unexpired cache files\n"
             . $this->getReport('expired_cache_files') . " expired cache files\n"
             . $this->getReport('deleted_expired_cache_files') . " deleted expired cache files\n"
-            . "-- Cache Subdirectories --\n"
+            . "---------- Cache Subdirectories ----------\n"
             . $this->getReport('cache_subdirectories') . " cache subdirectories\n"
-            . $this->getReport('empty_cache_subdirectories') . " empty subdirectories\n"
-            . $this->getReport('deleted_empty_cache_subdirectories') . " deleted empty subdirectories\n"
-            . "-- Misc --\n"
+            . $this->getReport('empty_cache_subdirectories') . " empty cache subdirectories\n"
+            . $this->getReport('deleted_empty_cache_subdirectories') . " deleted empty cache subdirectories\n"
+            . "---------- Misc ----------\n"
             . $this->getReport('objects') . " total objects\n"
             . $this->getReport('non_cache_files') . " non-cache files\n"
             . $this->getReport('invalid_timestamp_cache_files') . " invalid timestamp cache files\n"
             . $this->getReport('non_cache_subdirectories') . " non-cache subdirectories\n"
+            . $this->getReport('unable_to_delete_files') . " unable-to-delete files\n"
+            . $this->getReport('unable_to_delete_directories') . " unable-to-delete directories\n"
             ;
         $this->verbose($finalReport);
     }
@@ -285,15 +288,15 @@ class FileCacheCleaner
 
     /**
      * @param string $key
-     * @return int
+     * @return string
      */
     private function getReport($key)
     {
         if (isset($this->report[$key])) {
-            return $this->report[$key];
+            return str_pad(number_format($this->report[$key]), 10, ' ', STR_PAD_LEFT);
         }
 
-        return 0;
+        return '         0';
     }
 
     /**

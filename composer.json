@@ -1,6 +1,6 @@
 {
     "name": "attogram/file-cache-cleaner",
-    "description": "Delete expired Laravel-style `Illuminate\\Cache` cache files",
+    "description": "Delete expired Laravel-style `Illuminate\\Cache` cache files and empty directories",
     "type": "library",
     "license": "MIT",
     "require": {
