@@ -131,20 +131,31 @@ class FileCacheCleaner
     private function examineObject($splFileInfo)
     {
         // Find Illuminate\Cache files - filenames are 40 character hexadecimal sha1 hashes
-        if ($splFileInfo->isFile() && strlen($splFileInfo->getFileName()) == 40) {
-            $this->examineFile($splFileInfo->getPathName());
+        if ($splFileInfo->isFile()) {
+            if (strlen($splFileInfo->getFileName()) == 40) {
+                $this->examineFile($splFileInfo->getPathName());
             
+                return;
+            }
+            $this->incrementReport('non_cache_files');
+
             return;
         }
-        // Save subdirectories to list
+
+        // Save subdirectories to list - directory namesa are always 2 characters alphanumeric
         if ($splFileInfo->isDir()) {
-            $this->incrementReport('subdirectories');
-            $this->subDirectoryList[] = $splFileInfo->getPathName();
+            if (strlen($splFileInfo->getFileName()) == 2) {
+                $this->incrementReport('cache_subdirectories');
+                $this->subDirectoryList[] = $splFileInfo->getPathName();
+    
+                return;
+            }
+            $this->incrementReport('non_cache_subdirectories');
 
             return;
         }
 
-        $this->incrementReport('non_cache_files');
+        $this->incrementReport('non_cache_objects');
     }
 
     /**
@@ -152,12 +163,9 @@ class FileCacheCleaner
      */
     private function examineFile(string $pathname)
     {
-        if (!$timestamp = $this->getFileCacheExpiration($pathname))  { // If no valid timestamp found
-            $this->incrementReport('invalid_cache_expiration_files');
-            return;
-        }
+        $timestamp = $this->getFileCacheExpiration($pathname);
 
-        if ($timestamp >= $this->currentTime) { // If file cache is Not Expired yet
+        if ($timestamp > $this->currentTime) { // If file cache is Not Expired yet
             $this->incrementReport('unexpired_cache_files');
             return;
         }
@@ -169,7 +177,7 @@ class FileCacheCleaner
         }
 
         if (unlink($pathname)) {
-            $this->incrementReport('deleted_cache_files');
+            $this->incrementReport('deleted_expired_cache_files');
     
             return;
         }
@@ -189,7 +197,7 @@ class FileCacheCleaner
             || strlen($timestamp) != 10 // if timestamp is Not 10 characters long
             || !preg_match('/^([0-9]+)$/', $timestamp) // if timestamp is Not numbers-only
         ) {
-            $this->incrementReport('non-cache-files');
+            $this->incrementReport('invalid_timestamp_cache_files');
 
             return 9999999999; // max time 2286-11-20 17:46:39
         }
@@ -198,10 +206,11 @@ class FileCacheCleaner
     }
 
     /**
-     * Remove Empty Directories
+     * Remove Empty Subdirectories
      */
     private function examineCacheSubdirectories()
     {
+        // reverse array of subdirectories so we start from last item
         foreach (array_reverse($this->subDirectoryList) as $directory) {
             if ($this->isEmptyDirectory($directory)) {
                 $this->incrementReport('empty_directories');
@@ -235,20 +244,11 @@ class FileCacheCleaner
     private function removeDirectory($directory)
     {
         if (rmdir($directory)) {
-            $this->incrementReport('deleted_dirs');
+            $this->incrementReport('deleted_empty_directories');
             
             return;
         }
         $this->debug('ERROR deleting ' . $directory); // @TODO - handle error deleting directory
-    }
-
-    /**
-     * @param string $key
-     * @param mixed $value
-     */
-    private function setReport($key, $value)
-    {
-        $this->report[$key] = $value;
     }
 
     /**
@@ -268,7 +268,7 @@ class FileCacheCleaner
 
     /**
      * @param string $key
-     * @return mixed
+     * @return int
      */
     private function getReport($key)
     {
