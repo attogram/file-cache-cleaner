@@ -1,24 +1,22 @@
 #!/usr/bin/env php
 <?php
 /**
- * File Cache Cleaner - Command line
- *
- * usage:
- *
- *   silent:
- *     php file-cache-cleaner.php path/to/cache/directory
- *
- *   debug mode:
- *     php file-cache-cleaner.php path/to/cache/directory debug
+ * File Cache Cleaner 
+ *  - Command line loader
+ *  - https://github.com/attogram/file-cache-cleaner
  */
 declare(strict_types = 1);
+
+use Attogram\Cache\FileCacheCleaner;
 
 $autoloadLocations = [
     __DIR__ . '/../autoload.php',
     __DIR__ . '/../vendor/autoload.php',
     __DIR__ . '/../../../autoload.php',
 ];
+
 $autoloaded = false;
+
 foreach ($autoloadLocations as $load) {
     if (is_readable($load)) {
         $autoloaded = true;
@@ -26,17 +24,17 @@ foreach ($autoloadLocations as $load) {
         break;
     }
 }
+
 if (!$autoloaded) {
-    exit('autoload.php not found');
+    exit('autoload.php not found.');
 }
 
-use Attogram\Cache\FileCacheCleaner;
-
-$cacheDirectory = isset($argv[1]) ? $argv[1] : '';
-$verbosity = isset($argv[2]) ? $argv[2] : '';
+if (!isset($argv[0])) {
+    exit('Command Line Usage only.');
+}
 
 try {
-    (new FileCacheCleaner())->clean($cacheDirectory, $verbosity);
+    (new FileCacheCleaner())->clean($argv);
 } catch (Throwable $error) {
-    echo get_class($error) . ': ' . $error->getMessage();
+    print "\nError: " . get_class($error) . ': ' . $error->getMessage();
 }
