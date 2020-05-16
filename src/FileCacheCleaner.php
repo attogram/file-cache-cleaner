@@ -10,7 +10,6 @@ namespace Attogram\Cache;
 
 use DirectoryIterator;
 use FilesystemIterator;
-use InvalidArgumentException;
 use RecursiveDirectoryIterator;
 use RecursiveIteratorIterator;
 
@@ -19,7 +18,6 @@ use function file_get_contents;
 use function getopt;
 use function get_class;
 use function gmdate;
-use function in_array;
 use function is_dir;
 use function preg_match;
 use function print_r;
@@ -69,7 +67,7 @@ class FileCacheCleaner
         $this->setOptions();
         $this->examineCacheDirectory();
         $this->examineCacheSubdirectories();
-        $this->showReport();        
+        $this->showReport();
     }
 
     private function setOptions()
