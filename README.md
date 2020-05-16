@@ -27,8 +27,8 @@ Clean cache - delete expired cache files and empty subdirectories:
 
 Command Line Options:
 
-* `-d path`  or  `--directory path`  - set path to Cache Directory
-* `-c`       or  `--clean`           - clean cache: delete expired files, remove empty subdirectories
+* `-d path` or `--directory path` - set path to Cache Directory
+* `-c` or `--clean` - clean cache: delete expired files, remove empty subdirectories
 
 ## Project Links
 
