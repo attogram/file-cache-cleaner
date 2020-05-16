@@ -64,14 +64,12 @@ class FileCacheCleaner
      */
     public function clean()
     {
-        $this->debug(get_class() . ' v' . self::VERSION);
+        $this->verbose(get_class() . ' v' . self::VERSION);
 
         $this->setOptions();
         $this->examineCacheDirectory();
         $this->examineCacheSubdirectories();
-
-        $this->debug($this->report);
-        
+        $this->showReport();        
     }
 
     private function setOptions()
@@ -91,7 +89,8 @@ class FileCacheCleaner
         // -c or --clean - turn on Cleaning mode
         $this->clean = isset($options['c']) ? true : false;
         $this->clean = isset($options['clean']) ? true : $this->clean;
-    
+        $this->verbose('Cleaning Mode: ' . ($this->clean ? 'On' : 'Off'));
+
         $this->currentTime = time();
     }
 
@@ -106,10 +105,10 @@ class FileCacheCleaner
         }
         if (!is_dir($directory)) {
             print self::USAGE;
-            $this->fatalError('Cache Directory Not Found');
+            $this->fatalError('Cache Directory Not Found: ' . $directory);
         }
         $this->cacheDirectory = realpath($directory);
-        $this->debug('Cache Directory: ' . $this->cacheDirectory);
+        $this->verbose('Cache Directory: ' . $this->cacheDirectory);
     }
 
     private function examineCacheDirectory()
@@ -133,6 +132,7 @@ class FileCacheCleaner
         // Find Illuminate\Cache files - filenames are 40 character hexadecimal sha1 hashes
         if ($splFileInfo->isFile()) {
             if (strlen($splFileInfo->getFileName()) == 40) {
+                $this->incrementReport('cache_files');
                 $this->examineFile($splFileInfo->getPathName());
             
                 return;
@@ -142,7 +142,7 @@ class FileCacheCleaner
             return;
         }
 
-        // Save subdirectories to list - directory namesa are always 2 characters alphanumeric
+        // Save subdirectories to list - cache subdirectory names are always 2 characters long
         if ($splFileInfo->isDir()) {
             if (strlen($splFileInfo->getFileName()) == 2) {
                 $this->incrementReport('cache_subdirectories');
@@ -154,8 +154,6 @@ class FileCacheCleaner
 
             return;
         }
-
-        $this->incrementReport('non_cache_objects');
     }
 
     /**
@@ -181,7 +179,7 @@ class FileCacheCleaner
     
             return;
         }
-        $this->debug('ERROR: unable to delete ' . $pathname); // @TODO - handle error deleting file
+        $this->verbose('ERROR: unable to delete ' . $pathname); // @TODO - handle error deleting file
     }
 
     /**
@@ -213,7 +211,7 @@ class FileCacheCleaner
         // reverse array of subdirectories so we start from last item
         foreach (array_reverse($this->subDirectoryList) as $directory) {
             if ($this->isEmptyDirectory($directory)) {
-                $this->incrementReport('empty_directories');
+                $this->incrementReport('empty_cache_subdirectories');
                 if ($this->clean) {
                     $this->removeDirectory($directory);
                 }
@@ -244,11 +242,32 @@ class FileCacheCleaner
     private function removeDirectory($directory)
     {
         if (rmdir($directory)) {
-            $this->incrementReport('deleted_empty_directories');
+            $this->incrementReport('deleted_empty_cache_subdirectories');
             
             return;
         }
-        $this->debug('ERROR deleting ' . $directory); // @TODO - handle error deleting directory
+        $this->verbose('ERROR deleting ' . $directory); // @TODO - handle error deleting directory
+    }
+
+    private function showReport()
+    {
+        $finalReport = 'Cache Report: ' . $this->cacheDirectory . "\n"
+            . "-- Cache Files --\n"
+            . $this->getReport('cache_files') . " cache files\n"
+            . $this->getReport('unexpired_cache_files') . " unexpired cache files\n"
+            . $this->getReport('expired_cache_files') . " expired cache files\n"
+            . $this->getReport('deleted_expired_cache_files') . " deleted expired cache files\n"
+            . "-- Cache Subdirectories --\n"
+            . $this->getReport('cache_subdirectories') . " cache subdirectories\n"
+            . $this->getReport('empty_cache_subdirectories') . " empty subdirectories\n"
+            . $this->getReport('deleted_empty_cache_subdirectories') . " deleted empty subdirectories\n"
+            . "-- Misc --\n"
+            . $this->getReport('objects') . " total objects\n"
+            . $this->getReport('non_cache_files') . " non-cache files\n"
+            . $this->getReport('invalid_timestamp_cache_files') . " invalid timestamp cache files\n"
+            . $this->getReport('non_cache_subdirectories') . " non-cache subdirectories\n"
+            ;
+        $this->verbose($finalReport);
     }
 
     /**
@@ -282,7 +301,7 @@ class FileCacheCleaner
     /**
      * @param mixed $msg (optional)
      */
-    private function debug($msg = '')
+    private function verbose($msg = '')
     {
         print gmdate(self::DATE_FORMAT) . ' UTC: ' . print_r($msg, true) . "\n";
     }
@@ -292,7 +311,7 @@ class FileCacheCleaner
      */
     private function fatalError($msg = '')
     {
-        print gmdate(self::DATE_FORMAT) . ' UTC: FATAL ERROR: ' . print_r($msg, true) . "\n";
+        $this->verbose('FATAL ERROR: ' . print_r($msg, true));
         exit;
     }
 }
