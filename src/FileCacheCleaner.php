@@ -113,7 +113,7 @@ class FileCacheCleaner
     {
         $objects = new RecursiveCallbackFilterIterator(
             new RecursiveDirectoryIterator($this->cacheDirectory, FilesystemIterator::SKIP_DOTS),
-            function ($current, $key, $iterator) {
+            function ($current) {
                 $filename = $current->getFileName();
                 // is cache directory? filename must be 2 characters, alphanumeric only
                 if ($current->isDir()
