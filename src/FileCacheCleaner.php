@@ -10,6 +10,7 @@ namespace Attogram\Cache;
 
 use DirectoryIterator;
 use FilesystemIterator;
+use RecursiveCallbackFilterIterator;
 use RecursiveDirectoryIterator;
 use RecursiveIteratorIterator;
 
@@ -30,7 +31,7 @@ use function unlink;
 class FileCacheCleaner
 {
     /** @var string Code Version */
-    const VERSION = '2.3.2';
+    const VERSION = '2.4.0';
 
     /** @var string Date Format for gmdate() */
     const DATE_FORMAT = 'Y-m-d H:i:s';
@@ -105,15 +106,34 @@ class FileCacheCleaner
         $this->verbose('Cache Directory: ' . $this->cacheDirectory);
     }
 
+    /**
+     * Examine cache files and cache subdirectories
+     */
     private function examineCache()
     {
-        // Get all objects in cache directory, recursively into all sub-directories
-        $filesystemIterator = new RecursiveIteratorIterator(
+        $objects = new RecursiveCallbackFilterIterator(
             new RecursiveDirectoryIterator($this->cacheDirectory, FilesystemIterator::SKIP_DOTS),
-            RecursiveIteratorIterator::SELF_FIRST
+            function ($current, $key, $iterator) {
+                $filename = $current->getFileName();
+                // is cache directory? filename must be 2 characters, alphanumeric only
+                if ($current->isDir()
+                    && strlen($filename) == 2
+                    && preg_match('/^([a-z0-9]+)$/', $filename)
+                ) {
+                    return true;
+                }
+                // is cache file? filename must be 40 characters, alphanumeric only
+                if ($current->isFile()
+                    && strlen($filename) == 40
+                    && preg_match('/^([a-z0-9]+)$/', $filename)
+                ) {
+                    return true;
+                }
+                return false;
+            }
         );
-        foreach ($filesystemIterator as $splFileInfo) {
-            $this->incrementReport('objects');
+        $iterator = new RecursiveIteratorIterator($objects, RecursiveIteratorIterator::SELF_FIRST);
+        foreach ($iterator as $splFileInfo) {
             $this->findCacheFile($splFileInfo);
             $this->findCacheSubdirectory($splFileInfo);
         }
@@ -127,17 +147,7 @@ class FileCacheCleaner
         if (!$splFileInfo->isFile()) {
             return;
         }
-        // Find Illuminate\Cache files
-        // - filenames are 40 characters long, lowercase alphanumeric
-        if (strlen($splFileInfo->getFileName()) == 40
-            && preg_match('/^([a-z0-9]+)$/', $splFileInfo->getFileName())
-        ) {
-            $this->examineCacheFile($splFileInfo);
-
-            return;
-        }
-        $this->incrementReport('non_cache_files');
-        $this->incrementReport('non_cache_files_size', $splFileInfo->getSize());
+        $this->examineCacheFile($splFileInfo);
     }
 
     /**
@@ -147,14 +157,13 @@ class FileCacheCleaner
     {
         $size = $splFileInfo->getSize();
         $pathname = $splFileInfo->getPathName();
-
         $this->incrementReport('cache_files');
         $this->incrementReport('cache_files_size', $size);
-
         $timestamp = $this->getFileCacheExpiration($pathname);
         if ($timestamp > $this->currentTime) { // If file cache is Not Expired yet
             $this->incrementReport('unexpired_cache_files');
             $this->incrementReport('unexpired_cache_files_size', $size);
+
             return;
         }
         $this->incrementReport('expired_cache_files');
@@ -180,16 +189,8 @@ class FileCacheCleaner
             return;
         }
         // Save subdirectories to list
-        // - cache subdirectory names are always 2 characters long, lowercase alphanumeric
-        if (strlen($splFileInfo->getFileName()) == 2
-            && preg_match('/^([a-z0-9]+)$/', $splFileInfo->getFileName())
-        ) {
-            $this->incrementReport('cache_subdirectories');
-            $this->subDirectoryList[] = $splFileInfo->getPathName();
-
-            return;
-        }
-        $this->incrementReport('non_cache_subdirectories');
+        $this->incrementReport('cache_subdirectories');
+        $this->subDirectoryList[] = $splFileInfo->getPathName();
     }
 
     /**
@@ -277,10 +278,6 @@ class FileCacheCleaner
             . $this->getReport('empty_cache_subdirectories') . " empty cache subdirectories\n"
             . $this->getReport('deleted_empty_cache_subdirectories') . " deleted empty cache subdirectories\n"
             . "---------- Misc ----------\n"
-            . $this->getReport('objects') . " total objects\n"
-            . $this->getReport('non_cache_files') . " non-cache files, "
-                . $this->getReport('non_cache_files_size') . " bytes\n"
-            . $this->getReport('non_cache_subdirectories') . " non-cache subdirectories\n"
             . $this->getReport('invalid_timestamp_cache_files') . " invalid timestamp cache files\n"
             . $this->getReport('errors') . " errors\n"
             ;
@@ -300,7 +297,6 @@ class FileCacheCleaner
 
             return;
         }
-
         $this->report[$key] = $this->report[$key] + $increment;
     }
 
