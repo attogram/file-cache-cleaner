@@ -17,7 +17,6 @@ use RecursiveIteratorIterator;
 use function array_reverse;
 use function file_get_contents;
 use function getopt;
-use function get_class;
 use function gmdate;
 use function is_dir;
 use function preg_match;
@@ -284,7 +283,8 @@ class FileCacheCleaner
 
     private function showReport()
     {
-        $this->verbose("---------- Cache ----------\n"
+        $this->verbose(
+            "---------- Cache ----------\n"
             . $this->getReport('cache_files') . " cache files, "
                 . $this->getReport('cache_files_size') . " bytes\n"
             . $this->getReport('unexpired_cache_files') . " unexpired cache files, "
@@ -338,7 +338,8 @@ class FileCacheCleaner
      * @param string $key
      * @return string
      */
-    private function getReportDate($key) {
+    private function getReportDate($key)
+    {
         if (empty($this->report[$key])) {
             return ' - ';
         }
