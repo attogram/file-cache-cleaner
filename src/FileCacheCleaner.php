@@ -31,7 +31,7 @@ use function unlink;
 class FileCacheCleaner
 {
     /** @var string Code Version */
-    const VERSION = '2.4.0';
+    const VERSION = '2.5.0';
 
     /** @var string Date Format for gmdate() */
     const DATE_FORMAT = 'Y-m-d H:i:s';
@@ -49,8 +49,8 @@ class FileCacheCleaner
     /** @var array $subDirectoryList - list of all sub-directories in the Cache Directory */
     private $subDirectoryList = [];
 
-    /** @var int $currentTime - current datetime in unix timestamp format */
-    private $currentTime = 0;
+    /** @var int $expirationCheckTime - Cache expiration date used for cleaning, in unix timestamp format */
+    private $expirationCheckTime = 0;
 
     /** @var bool $clean - clean cache directory? */
     private $clean = false;
@@ -63,7 +63,7 @@ class FileCacheCleaner
      */
     public function clean()
     {
-        $this->verbose(get_class() . ' v' . self::VERSION);
+        $this->verbose('attogram/file-cache-cleaner v' . self::VERSION);
         $this->setOptions();
         $this->examineCache();
         $this->examineCacheSubdirectories();
@@ -86,7 +86,8 @@ class FileCacheCleaner
         $this->clean = isset($options['clean']) ? true : $this->clean;
         $this->verbose('Cleaning Mode: ' . ($this->clean ? 'On' : 'Off'));
         // expiration comparison time
-        $this->currentTime = time();
+        $this->expirationCheckTime = time();
+        $this->verbose('Expiration Check Time: ' . gmdate(self::DATE_FORMAT, $this->expirationCheckTime) . ' UTC');
     }
 
     /**
@@ -160,7 +161,7 @@ class FileCacheCleaner
         $this->incrementReport('cache_files');
         $this->incrementReport('cache_files_size', $size);
         $timestamp = $this->getFileCacheExpiration($pathname);
-        if ($timestamp > $this->currentTime) { // If file cache is Not Expired yet
+        if ($timestamp > $this->expirationCheckTime) { // If file cache is Not Expired yet
             $this->incrementReport('unexpired_cache_files');
             $this->incrementReport('unexpired_cache_files_size', $size);
 
@@ -210,8 +211,28 @@ class FileCacheCleaner
 
             return 9999999999; // max time 2286-11-20 17:46:39
         }
+        $timestamp = (int) $timestamp;
+        $this->reportExpiration($timestamp);
 
-        return (int) $timestamp;
+        return $timestamp;
+    }
+
+    /**
+     * Report shortest/longest expiration times
+     * @param int $timestamp (unix timestamp)
+     */
+    private function reportExpiration($timestamp)
+    {
+        if (empty($this->report['expirationShortest'])
+            || $timestamp <= $this->report['expirationShortest']
+        ) {
+            $this->report['expirationShortest'] = $timestamp;
+        }
+        if (empty($this->report['expirationLongest'])
+            || $timestamp >= $this->report['expirationLongest']
+        ) {
+            $this->report['expirationLongest'] = $timestamp;
+        }
     }
 
     /**
@@ -263,8 +284,7 @@ class FileCacheCleaner
 
     private function showReport()
     {
-        $finalReport = 'Cache Report: ' . $this->cacheDirectory . "\n"
-            . "---------- Cache Files ----------\n"
+        $this->verbose("---------- Cache ----------\n"
             . $this->getReport('cache_files') . " cache files, "
                 . $this->getReport('cache_files_size') . " bytes\n"
             . $this->getReport('unexpired_cache_files') . " unexpired cache files, "
@@ -273,15 +293,16 @@ class FileCacheCleaner
                 . $this->getReport('expired_cache_files_size') . " bytes\n"
             . $this->getReport('deleted_expired_cache_files') . " deleted expired cache files, "
             .    $this->getReport('deleted_expired_cache_files_size') . " bytes\n"
-            . "---------- Cache Subdirectories ----------\n"
+            . $this->getReportDate('expirationShortest') . " UTC: Shortest Expiration Time\n"
+            . $this->getReportDate('expirationLongest') . " UTC: Longest Expiration Time\n"
+            . "---------- Subdirectories ----------\n"
             . $this->getReport('cache_subdirectories') . " cache subdirectories\n"
             . $this->getReport('empty_cache_subdirectories') . " empty cache subdirectories\n"
             . $this->getReport('deleted_empty_cache_subdirectories') . " deleted empty cache subdirectories\n"
             . "---------- Misc ----------\n"
             . $this->getReport('invalid_timestamp_cache_files') . " invalid timestamp cache files\n"
-            . $this->getReport('errors') . " errors\n"
-            ;
-        $this->verbose($finalReport);
+            . $this->getReport('errors') . " errors"
+        );
     }
 
     /**
@@ -314,11 +335,23 @@ class FileCacheCleaner
     }
 
     /**
+     * @param string $key
+     * @return string
+     */
+    private function getReportDate($key) {
+        if (empty($this->report[$key])) {
+            return ' - ';
+        }
+
+        return gmdate(self::DATE_FORMAT, $this->report[$key]);
+    }
+
+    /**
      * @param mixed $msg (optional)
      */
     private function verbose($msg = '')
     {
-        print gmdate(self::DATE_FORMAT) . ' UTC: ' . print_r($msg, true) . "\n";
+        print print_r($msg, true) . "\n";
     }
 
     /**
@@ -326,7 +359,6 @@ class FileCacheCleaner
      */
     private function fatalError($msg = '')
     {
-        $this->verbose('FATAL ERROR: ' . print_r($msg, true));
-        exit;
+        exit('FATAL ERROR: ' . print_r($msg, true));
     }
 }
