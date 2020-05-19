@@ -43,3 +43,4 @@ Laravel artisan commands to delete expired cache files:
 * <https://github.com/jdavidbakr/laravel-cache-garbage-collector>
 * <https://github.com/arifhp86/laravel-clear-expired-cache-file>
 * <https://github.com/momokang/laravel-clean-file-cache>
+* <https://github.com/spatie/laravel-directory-cleanup>
